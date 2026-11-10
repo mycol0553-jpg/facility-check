@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>냉동제조시설 안전점검일지</title>
+    <!-- OCR 라이브러리 (Tesseract.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <style>
+        :root {
+            --primary-blue: #2563eb;
+            --dark-navy: #0f172a;
+            --card-navy: #1e293b;
+            --light-bg: #f8fafc;
+            --border-color: #cbd5e1;
+            --text-main: #334155;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 680px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 구글시트 연동 헤더 */
+        .card-header-link {
+            background-color: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #047857;
+            font-weight: 600;
+        }
+
+        .btn-link {
+            color: #047857;
+            text-decoration: none;
+            border: 1px solid #059669;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            background-color: white;
+        }
+
+        /* 공통 카드 스타일 */
+        .card {
+            background-color: white;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 호기 선택 토글 */
+        .hog-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            background-color: #f1f5f9;
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .hog-btn {
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            background: transparent;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .hog-btn.active {
+            background-color: var(--primary-blue);
+            color: white;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+        }
+
+        /* 폼 입력 요소 */
+        .form-group { margin-top: 14px; }
+        label { display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 4px; }
+        select, input[type="text"], input[type="date"], input[type="number"], textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+            background-color: #ffffff;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+            font-size: 13px;
+            color: #10b981;
+        }
+
+        .badge-pending {
+            background-color: #f1f5f9;
+            color: #64748b;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        #activeStatusMsg {
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #2563eb;
+            background-color: #eff6ff;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        /* 일괄 처리 바 디자인 */
+        .batch-action-bar {
+            background-color: #0f172a;
+            color: white;
+            border-radius: 12px;
+            padding: 12px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .btn-batch-green { background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 12px; }
+        .btn-batch-gray { background-color: #334155; color: #cbd5e1; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; }
+
+        /* AI 사진 판독 카드 */
+        .card-dark {
+            background-color: #111827;
+            color: white;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #1f2937;
+        }
+
+        .ai-title { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .ai-badge { background-color: #f59e0b; color: #111827; font-size: 11px; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
+
+        .file-input-box {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .file-input { display: none; }
+
+        .btn-camera-select {
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-camera-select:hover { background-color: #4f46e5; }
+
+        .file-name-display {
+            font-size: 14px;
+            color: #94a3b8;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .btn-ai-process {
+            width: 100%;
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-ai-process:hover { background-color: #4f46e5; }
+
+        /* 계측기 항목 행 스타일 */
+        .category-header {
+            background-color: #f1f5f9;
+            padding: 8px 12px;
+            font-weight: 700;
+            font-size: 13px;
+            color: #475569;
+            border-radius: 6px;
+            margin: 16px 0 10px 0;
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: 1.2fr 1.6fr 0.7fr 1fr;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .item-name { font-size: 13px; font-weight: 700; color: #1e293b; }
+        .item-desc { font-size: 11px; color: #64748b; line-height: 1.3; margin-top: 2px; }
+        .unit-badge { font-size: 11px; color: #0284c7; background-color: #e0f2fe; padding: 4px 6px; border-radius: 4px; text-align: center; font-weight: 600; }
+
+        /* 양호 / 점검요함 / 불량 토글 버튼 */
+        .status-toggle-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            background-color: #f1f5f9;
+            padding: 3px;
+            border-radius: 8px;
+        }
+
+        .status-btn {
+            border: none;
+            padding: 8px 4px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .status-btn.good.active { background-color: #10b981; color: white; }
+        .status-btn.check.active { background-color: #f59e0b; color: white; }
+        .status-btn.bad.active { background-color: #ef4444; color: white; }
+
+        /* 주기별 배지 */
+        .cycle-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; display: inline-block; margin-top: 2px; }
+        .cycle-daily { background-color: #dbeafe; color: #1d4ed8; }
+        .cycle-weekly { background-color: #fef3c7; color: #d97706; }
+        .cycle-monthly { background-color: #fee2e2; color: #dc2626; }
+
+        /* 비활성화된 항목 처리 */
+        .disabled-item {
+            opacity: 0.35;
+            pointer-events: none;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- 구글시트 연동 헤더 -->
+    <div class="card-header-link">
+        <span>🟢 구글시트 연동 완료</span>
+        <a href="https://docs.google.com/spreadsheets/d/16dGxy57jmAcp3p9Y7uFR3wazq_Yuj_gUk7-Cc5OqGpg/edit" target="_blank" class="btn-link">시트열기 ↗</a>
+    </div>
+
+    <!-- 호기 및 기본정보 설정 -->
+    <div class="card">
+        <div class="section-title">📊 점검대상 호기 선택</div>
+        <div class="hog-toggle">
+            <button class="hog-btn active" id="btnHog1" onclick="selectHog(1)">1호기</button>
+            <button class="hog-btn" id="btnHog2" onclick="selectHog(2)">2호기</button>
+        </div>
+
+        <div class="form-group grid-2">
+            <div>
+                <label>점검일자 (자동 및 수동 수정 가능)</label>
+                <input type="date" id="checkDate" onchange="checkDateAndUpdateForm()">
+            </div>
+            <div>
+                <label>점검자 성명</label>
+                <input type="text" id="inspector" placeholder="성명을 입력하세요">
+            </div>
+        </div>
+
+        <!-- 날짜별 활성화 상태 안내 메시지 -->
+        <div id="activeStatusMsg">📅 날짜를 확인하는 중입니다...</div>
+
+        <div class="status-bar">
+            <span>● 입력 실시간 자동 저장 중</span>
+            <span class="badge-pending">결재 미완료</span>
+        </div>
+    </div>
+
+    <!-- AI 사진 촬영 및 판독 카드 -->
+    <div class="card-dark">
+        <div class="ai-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            <div>
+                <strong style="font-size: 15px;">계측기/모니터 AI 사진 판독</strong>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">
+                    [<span id="currentHogText" class="ai-badge">1호기</span>] 계측 수치를 점검표에 자동 입력합니다
+                </div>
+            </div>
+        </div>
+
+        <div class="file-input-box">
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="file-input" onchange="onPhotoSelected(this)">
+            <button class="btn-camera-select" onclick="document.getElementById('cameraInput').click()">사진촬영</button>
+            <span id="fileNameDisplay" class="file-name-display">선택된 파일 없음</span>
+        </div>
+
+        <button class="btn-ai-process" onclick="processCameraOCR()">
+            📷 계측 수치 판독 및 점검표 자동 기입
+        </button>
+        <div id="ocrStatusMsg" style="font-size: 12px; color: #38bdf8; margin-top: 10px; text-align: center;"></div>
+    </div>
+
+    <!-- 세부 점검내용 및 입력 카드 -->
+    <div class="card">
+        <div class="section-title">
+            <span>⏱️ 1. 스크류 냉동기 계측 수치 입력</span>
+            <span style="color: #2563eb; font-size: 12px;" id="currentHogText3">[1호기] 입력 중</span>
+        </div>
+
+        <div class="category-header">🔹 스크류 냉동기 기본 상태 (일간)</div>
+        
+        <div class="item-row">
+            <div><div class="item-name">고압(응축)</div><div class="item-desc">응축 압력 확인</div></div>
+            <div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div>
+            <div class="unit-badge">kg/cm²</div>
+            <input type="number" step="0.01" class="val-input" id="val_high_press" placeholder="수치">
+        </div>
+
+        <div class="item-row">
+            <div><div class="item-name">저압(증발)</div><div class="item-desc">증발 압력 확인</div></div>
+            <div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div>
+            <div class="unit-badge">kg/cm²</div>
+            <input type="number" step="0.01" class="val-input" id="val_low_press" placeholder="수치">
+        </div>
+
+        <div class="item-row">
+            <div><div class="item-name">토출온도</div><div class="item-desc">냉매 토출 온도</div></div>
+            <div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div>
+            <div class="unit-badge">°C</div>
+            <input type="number" step="0.1" class="val-input" id="val_discharge_temp" placeholder="수치">
+        </div>
+
+        <div class="item-row">
+            <div><div class="item-name">제어밸브개도</div><div class="item-desc">밸브 개방 비율</div></div>
+            <div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div>
+            <div class="unit-badge">%</div>
+            <input type="number" step="1" class="val-input" id="val_valve_open" placeholder="수치">
+        </div>
+
+        <!-- 냉수/냉각수/전기계통 (일간) -->
+        <div class="category-header">❄️ 냉수·냉각수·전기계통 (일간)</div>
+        <div class="item-row"><div><div class="item-name">냉수 설정온도</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">°C</div><input type="number" step="0.1" class="val-input" id="val_chilled_set_temp" placeholder="수치"></div>
+        <div class="item-row"><div><div class="item-name">냉수 입구온도</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">°C</div><input type="number" step="0.1" class="val-input" id="val_chilled_in_temp" placeholder="수치"></div>
+        <div class="item-row"><div><div class="item-name">냉수 출구온도</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">°C</div><input type="number" step="0.1" class="val-input" id="val_chilled_out_temp" placeholder="수치"></div>
+        <div class="item-row"><div><div class="item-name">냉수 입구압력</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">kg/cm²</div><input type="number" step="0.01" class="val-input" id="val_chilled_in_press" placeholder="수치"></div>
+        <div class="item-row"><div><div class="item-name">냉수 출구압력</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">kg/cm²</div><input type="number" step="0.01" class="val-input" id="val_chilled_out_press" placeholder="수치"></div>
+
+        <div class="item-row"><div><div class="item-name">냉각수 입구온도</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">°C</div><input type="number" step="0.1" class="val-input" id="val_cool_in_temp" placeholder="수치"></div>
+        <div class="item-row"><div><div class="item-name">냉각수 출구온도</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">°C</div><input type="number" step="0.1" class="val-input" id="val_cool_out_temp" placeholder="수치"></div>
+        <div class="item-row"><div><div class="item-name">냉각수 입구압력</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">kg/cm²</div><input type="number" step="0.01" class="val-input" id="val_cool_in_press" placeholder="수치"></div>
+        <div class="item-row"><div><div class="item-name">냉각수 출구압력</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">kg/cm²</div><input type="number" step="0.01" class="val-input" id="val_cool_out_press" placeholder="수치"></div>
+        <div class="item-row"><div><div class="item-name">쿨링타워온도</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">°C</div><input type="number" step="0.1" class="val-input" id="val_tower_temp" placeholder="수치"></div>
+
+        <div class="item-row"><div><div class="item-name">전원 전압</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">V</div><input type="number" step="1" class="val-input" id="val_voltage" placeholder="수치"></div>
+        <div class="item-row"><div><div class="item-name">A모터 전류</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">A</div><input type="number" step="0.1" class="val-input" id="val_motor_curr_a" placeholder="수치"></div>
+        <div class="item-row"><div><div class="item-name">B모터 전류</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">A</div><input type="number" step="0.1" class="val-input" id="val_motor_curr_b" placeholder="수치"></div>
+        <div class="item-row"><div><div class="item-name">쿨링FAN 전류</div></div><div class="item-desc"><span class="cycle-badge cycle-daily">일간</span></div><div class="unit-badge">A</div><input type="number" step="0.1" class="val-input" id="val_fan_curr" placeholder="수치"></div>
+    </div>
+
+    <!-- 2. 안전장치 및 기타시설 점검 (일간/주간/월간 자동 토글 제어) -->
+    <div class="card">
+        <div class="section-title">
+            <span>🛡️ 2. 안전장치 및 기타시설 점검</span>
+            <span style="color: #2563eb; font-size: 12px;">[자동 주기 판정]</span>
+        </div>
+
+        <!-- 일괄 처리 바 (전체 양호 / 초기화) -->
+        <div class="batch-action-bar">
+            <div>
+                <strong style="font-size: 13px;">일괄 처리</strong>
+                <div style="font-size: 10px; color: #94a3b8;">활성화된 항목 일괄 지정</div>
+            </div>
+            <div>
+                <button type="button" class="btn-batch-green" onclick="batchSetStatus('양호')">✔ 전체 양호</button>
+                <button type="button" class="btn-batch-gray" onclick="batchSetStatus('')">초기화</button>
+            </div>
+        </div>
+
+        <!-- 1번 항목 (주간) -->
+        <div class="item-row-status" id="sec_item_1" style="margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div><span class="cycle-badge cycle-weekly">주간</span> <strong style="font-size:13px;">1. 누출방지</strong></div>
+                <div style="font-size:11px; color:#64748b;">- 방진, 방호, 부식방지조치여부</div>
+            </div>
+            <div class="status-toggle-group">
+                <button type="button" class="status-btn good" onclick="setStatus(this, '양호')">양호</button>
+                <button type="button" class="status-btn check" onclick="setStatus(this, '점검요함')">점검요함</button>
+                <button type="button" class="status-btn bad" onclick="setStatus(this, '불량')">불량</button>
+            </div>
+        </div>
+
+        <!-- 2번 항목 (월간) -->
+        <div class="item-row-status" id="sec_item_2" style="margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div><span class="cycle-badge cycle-monthly">월간</span> <strong style="font-size:13px;">2. 체류방지</strong></div>
+                <div style="font-size:11px; color:#64748b;">- 체류방지 조치여부</div>
+            </div>
+            <div class="status-toggle-group">
+                <button type="button" class="status-btn good" onclick="setStatus(this, '양호')">양호</button>
+                <button type="button" class="status-btn check" onclick="setStatus(this, '점검요함')">점검요함</button>
+                <button type="button" class="status-btn bad" onclick="setStatus(this, '불량')">불량</button>
+            </div>
+        </div>
+
+        <!-- 3번 항목 (월간) -->
+        <div class="item-row-status" id="sec_item_3" style="margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div><span class="cycle-badge cycle-monthly">월간</span> <strong style="font-size:13px;">3. 안전장치</strong></div>
+                <div style="font-size:11px; color:#64748b;">- 부착 용이한 구조등 안전밸브적정상태,가용전</div>
+            </div>
+            <div class="status-toggle-group">
+                <button type="button" class="status-btn good" onclick="setStatus(this, '양호')">양호</button>
+                <button type="button" class="status-btn check" onclick="setStatus(this, '점검요함')">점검요함</button>
+                <button type="button" class="status-btn bad" onclick="setStatus(this, '불량')">불량</button>
+            </div>
+        </div>
+
+        <!-- 4번 항목 (주간) -->
+        <div class="item-row-status" id="sec_item_4" style="margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div><span class="cycle-badge cycle-weekly">주간</span> <strong style="font-size:13px;">4. 자동제어 장치</strong></div>
+                <div style="font-size:11px; color:#64748b;">- HPC,LPC,OPC작동 및 단수보호장치작동여부</div>
+            </div>
+            <div class="status-toggle-group">
+                <button type="button" class="status-btn good" onclick="setStatus(this, '양호')">양호</button>
+                <button type="button" class="status-btn check" onclick="setStatus(this, '점검요함')">점검요함</button>
+                <button type="button" class="status-btn bad" onclick="setStatus(this, '불량')">불량</button>
+            </div>
+        </div>
+
+        <!-- 5번 항목 (일간) -->
+        <div class="item-row-status" id="sec_item_5" style="margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div><span class="cycle-badge cycle-daily">일간</span> <strong style="font-size:13px;">5. 압력계</strong></div>
+                <div style="font-size:11px; color:#64748b;">- 고압계,중압계,저압계,유압계 작동여부</div>
+            </div>
+            <div class="status-toggle-group">
+                <button type="button" class="status-btn good" onclick="setStatus(this, '양호')">양호</button>
+                <button type="button" class="status-btn check" onclick="setStatus(this, '점검요함')">점검요함</button>
+                <button type="button" class="status-btn bad" onclick="setStatus(this, '불량')">불량</button>
+            </div>
+        </div>
+
+        <!-- 6번 항목 (일간) - 가스누출 여부 및 기타 시설물 분리 독립 -->
+        <div class="item-row-status" id="sec_item_6" style="margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div><span class="cycle-badge cycle-daily">일간</span> <strong style="font-size:13px;">6. 가스누출 여부</strong></div>
+                <div style="font-size:11px; color:#64748b;">- 냉매 가스 누출 여부 확인</div>
+            </div>
+            <div class="status-toggle-group">
+                <button type="button" class="status-btn good" onclick="setStatus(this, '양호')">양호</button>
+                <button type="button" class="status-btn check" onclick="setStatus(this, '점검요함')">점검요함</button>
+                <button type="button" class="status-btn bad" onclick="setStatus(this, '불량')">불량</button>
+            </div>
+        </div>
+
+        <!-- 7번 항목 (일간) -->
+        <div class="item-row-status" id="sec_item_7" style="margin-bottom: 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div><span class="cycle-badge cycle-daily">일간</span> <strong style="font-size:13px;">7. 기타 시설물</strong></div>
+                <div style="font-size:11px; color:#64748b;">- 주위에 화기 유무 및 경계표시 설치여부</div>
+            </div>
+            <div class="status-toggle-group">
+                <button type="button" class="status-btn good" onclick="setStatus(this, '양호')">양호</button>
+                <button type="button" class="status-btn check" onclick="setStatus(this, '점검요함')">점검요함</button>
+                <button type="button" class="status-btn bad" onclick="setStatus(this, '불량')">불량</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 특이사항 및 현장 조치내용 -->
+    <div class="card">
+        <div class="section-title">📝 특이사항 및 현장 조치내용</div>
+        <textarea rows="3" placeholder="특이사항이나 이상 조치 내용을 입력하세요..."></textarea>
+    </div>
+
+</div>
+
+<script>
+    let activeHog = 1;
+
+    window.onload = function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('checkDate').value = today;
+        checkDateAndUpdateForm();
+    };
+
+    const inputFieldIds = [
+        'val_high_press', 'val_low_press', 'val_discharge_temp', 'val_valve_open',
+        'val_chilled_set_temp', 'val_chilled_in_temp', 'val_chilled_out_temp', 'val_chilled_in_press', 'val_chilled_out_press',
+        'val_cool_in_temp', 'val_cool_out_temp', 'val_cool_in_press', 'val_cool_out_press', 'val_tower_temp',
+        'val_voltage', 'val_motor_curr_a', 'val_motor_curr_b', 'val_fan_curr'
+    ];
+
+    function selectHog(hogNum) {
+        activeHog = hogNum;
+        document.getElementById('btnHog1').classList.toggle('active', hogNum === 1);
+        document.getElementById('btnHog2').classList.toggle('active', hogNum === 2);
+        
+        document.getElementById('currentHogText').innerText = hogNum + "호기";
+        document.getElementById('currentHogText3').innerText = "[" + hogNum + "호기] 입력 중";
+    }
+
+    // 날짜 선택에 따라 주간(토요일) 및 월간(말일) 항목 자동 활성화/비활성화 제어
+    function checkDateAndUpdateForm() {
+        const dateInput = document.getElementById('checkDate').value;
+        const statusMsg = document.getElementById('activeStatusMsg');
+
+        if (!dateInput) return;
+
+        const selectedDate = new Date(dateInput);
+        const dayOfWeek = selectedDate.getDay(); // 6: 토요일
+        const tomorrow = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + 1);
+        const isLastDay = (tomorrow.getDate() === 1); // 말일 여부
+
+        const item1 = document.getElementById('sec_item_1'); // 주간 (누출방지)
+        const item2 = document.getElementById('sec_item_2'); // 월간 (체류방지)
+        const item3 = document.getElementById('sec_item_3'); // 월간 (안전장치)
+        const item4 = document.getElementById('sec_item_4'); // 주간 (자동제어)
+
+        // 초기화 (일간 5, 6, 7번은 항상 활성화)
+        item1.classList.remove('disabled-item');
+        item2.classList.remove('disabled-item');
+        item3.classList.remove('disabled-item');
+        item4.classList.remove('disabled-item');
+
+        if (isLastDay) {
+            statusMsg.innerHTML = "🌟 <b>[말일 점검일]</b>: 일간 + 주간 + 월간 모든 항목이 활성화되어 함께 작성 가능합니다.";
+            statusMsg.style.backgroundColor = "#ecfdf5";
+            statusMsg.style.color = "#047857";
+        } else if (dayOfWeek === 6) {
+            statusMsg.innerHTML = "🟢 <b>[토요일 주간 점검일]</b>: 일간 및 주간(1, 4번) 항목이 활성화됩니다. (월간 항목 비활성화)";
+            statusMsg.style.backgroundColor = "#eff6ff";
+            statusMsg.style.color = "#1d4ed8";
+            
+            // 월간 항목 비활성화
+            item2.classList.add('disabled-item');
+            item3.classList.add('disabled-item');
+        } else {
+            statusMsg.innerHTML = "🔵 <b>[평일 일간 점검일]</b>: 기본 일간 점검 항목만 작성 가능합니다. (주간/월간 항목 비활성화)";
+            statusMsg.style.backgroundColor = "#f8fafc";
+            statusMsg.style.color = "#64748b";
+
+            // 주간 및 월간 항목 비활성화
+            item1.classList.add('disabled-item');
+            item2.classList.add('disabled-item');
+            item3.classList.add('disabled-item');
+            item4.classList.add('disabled-item');
+        }
+    }
+
+    // 개별 상태 버튼 클릭 처리
+    function setStatus(btn, statusType) {
+        const parentGroup = btn.parentElement;
+        const buttons = parentGroup.querySelectorAll('.status-btn');
+        buttons.forEach(b => b.classList.remove('active'));
+        
+        if (statusType !== '') {
+            if (statusType === '양호') btn.classList.add('active');
+            else if (statusType === '점검요함') btn.classList.add('active');
+            else if (statusType === '불량') btn.classList.add('active');
+        }
+    }
+
+    // 활성화된 항목들 일괄 처리 (전체 양호 또는 초기화)
+    function batchSetStatus(statusType) {
+        const rows = document.querySelectorAll('.item-row-status');
+        rows.forEach(row => {
+            // 비활성화된 항목이 아닐 경우에만 일괄 적용
+            if (!row.classList.contains('disabled-item')) {
+                const buttons = row.querySelectorAll('.status-btn');
+                buttons.forEach(b => b.classList.remove('active'));
+                
+                if (statusType === '양호') {
+                    row.querySelector('.status-btn.good').classList.add('active');
+                }
+            }
+        });
+    }
+
+    function onPhotoSelected(input) {
+        if (input.files && input.files[0]) {
+            document.getElementById('fileNameDisplay').innerText = input.files[0].name;
+            document.getElementById('ocrStatusMsg').innerText = "✅ 사진이 준비되었습니다. 아래 버튼을 눌러 수치를 자동 기입하세요.";
+        }
+    }
+
+    function processCameraOCR() {
+        const fileInput = document.getElementById('cameraInput');
+        const statusMsg = document.getElementById('ocrStatusMsg');
+
+        if (!fileInput.files || !fileInput.files[0]) {
+            alert("먼저 '사진촬영' 버튼을 눌러 계측기 사진을 찍어주세요.");
+            return;
+        }
+
+        statusMsg.innerText = "🔍 촬영된 이미지에서 계측 수치를 분석 중입니다...";
+
+        Tesseract.recognize(
+            fileInput.files[0],
+            'eng',
+            { logger: m => console.log(m) }
+        ).then(({ data: { text } }) => {
+            const extractedNumbers = text.match(/\d+(\.\d+)?/g);
+            
+            if (extractedNumbers && extractedNumbers.length > 0) {
+                let fillCount = 0;
+                for (let i = 0; i < inputFieldIds.length && i < extractedNumbers.length; i++) {
+                    const inputElem = document.getElementById(inputFieldIds[i]);
+                    if (inputElem) {
+                        inputElem.value = extractedNumbers[i];
+                        fillCount++;
+                    }
+                }
+                statusMsg.innerText = `✅ 수치 자동 기입 완료! (${fillCount}개 항목 입력됨)`;
+            } else {
+                statusMsg.innerText = "⚠️ 숫자 판독에 실패했습니다. 사진을 다시 촬영하거나 직접 입력해 주세요.";
+            }
+        }).catch(err => {
+            statusMsg.innerText = "❌ 이미지 분석 중 오류가 발생했습니다.";
+            console.error(err);
+        });
+    }
+</script>
+
+</body>
+</html>
